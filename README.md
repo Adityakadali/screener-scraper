@@ -38,6 +38,10 @@ Once you have successfully installed the tool and its dependencies, you can star
 
 3. It will then scrape the data from the provided URL and present it to you, allowing you to further process or analyze the data as needed.
 
+### Demo 📷
+
+![Demo Screenshot](./screenshot/screenshot.png)
+
 This CLI tool simplifies the process of retrieving financial data from Screener.in and makes it convenient for your financial analysis or any other use cases.
 
 Enjoy using the Screener.in Screen Scraper CLI! 🎉📈
