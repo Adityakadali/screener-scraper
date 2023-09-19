@@ -1,8 +1,8 @@
-# Screener.in Screen Scraper CLI
+# Screener.in Screen Scraper CLI 👨‍💻
 
-This is a simple command-line interface (CLI) tool for scraping screens from [Screener.in](https://screener.in), a popular financial data website. With this tool, you can easily fetch and retrieve data from Screener.in for your analysis and use it in your projects.
+This is a simple command-line interface (CLI) tool for scraping screens from [Screener.in](https://screener.in) 📊, a popular financial data website. With this tool, you can easily fetch and retrieve data from Screener.in for your analysis and use it in your projects 🚀.
 
-## Installation
+## Installation 📦
 
 To get started, follow these simple installation steps:
 
@@ -24,7 +24,7 @@ To get started, follow these simple installation steps:
    npm install
    ```
 
-## How to Use
+## How to Use 🤖
 
 Once you have successfully installed the tool and its dependencies, you can start using it to scrape data from Screener.in:
 
@@ -40,4 +40,4 @@ Once you have successfully installed the tool and its dependencies, you can star
 
 This CLI tool simplifies the process of retrieving financial data from Screener.in and makes it convenient for your financial analysis or any other use cases.
 
-Enjoy using the Screener.in Screen Scraper CLI!
+Enjoy using the Screener.in Screen Scraper CLI! 🎉📈
