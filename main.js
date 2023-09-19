@@ -1,8 +1,10 @@
+// Import necessary modules
 import * as cheerio from "cheerio";
 import axios from "axios";
 import fs from "fs/promises";
 import * as p from "@clack/prompts";
 
+// Get user input using prompts
 const userInput = await p.group({
   SCREENER_URL: () =>
     p.text({
@@ -25,8 +27,10 @@ const userInput = await p.group({
     }),
 });
 
+// Set the delay between HTTP requests
 const requestDelay = 2000;
 
+// Function to fetch HTML content from a URL
 async function getHtml(URL) {
   try {
     const { data: html } = await axios.get(URL);
@@ -36,17 +40,23 @@ async function getHtml(URL) {
   }
 }
 
+// Function to extract and write headers to a CSV file
 async function getHeaders(URL) {
   try {
     const html = await getHtml(URL);
     const $ = cheerio.load(html);
     const headers = [];
     const $table = $(".data-table > tbody");
+
+    // Extract headers from the first row of the table
     $table.find("tr:nth-child(1) > th").each((_idx, element) => {
       headers.push($(element).text().replace(/\n\s+/g, " ").trim());
     });
+
+    // Write headers to the CSV file
     await writeCSV(headers, userInput.outputFilePath + ".csv");
 
+    // Determine the total number of pages for pagination
     const totalPages =
       $("[data-paging] > div > div > a.ink-900").last().text() || "1";
     console.log(`Total pages: ${totalPages}`);
@@ -56,6 +66,7 @@ async function getHeaders(URL) {
   }
 }
 
+// Function to write data to a CSV file
 async function writeCSV(data, filePath) {
   try {
     const row = data.join(",");
@@ -65,12 +76,14 @@ async function writeCSV(data, filePath) {
   }
 }
 
+// Function to process data from each page
 async function processPage(URL, page) {
   const pageUrl = `${URL}?page=${page}`;
   const html = await getHtml(pageUrl);
   const $ = cheerio.load(html);
   const $table = $(".data-table > tbody");
 
+  // Extract and write data from each row on the page
   $table.find("tr[data-row-company-id]").each((_idx, element) => {
     const data = $(element)
       .find("td")
@@ -81,13 +94,17 @@ async function processPage(URL, page) {
   });
 }
 
+// Function to generate the CSV file
 async function makeCSV(URL) {
   try {
     const totalPages = await getHeaders(URL);
 
+    // Process data from each page
     for (let index = 1; index <= totalPages; index++) {
       console.log(`Processing page ${index} of ${totalPages}`);
       await processPage(URL, index);
+
+      // Introduce a delay between requests to avoid overloading the server
       await new Promise((resolve) => setTimeout(resolve, requestDelay));
     }
 
@@ -97,13 +114,18 @@ async function makeCSV(URL) {
   }
 }
 
+// Main function to orchestrate the process
 async function main() {
   try {
+    // Create or clear the output CSV file
     await fs.writeFile(userInput.outputFilePath + ".csv", "");
+
+    // Start generating the CSV file
     await makeCSV(userInput.SCREENER_URL);
   } catch (error) {
     console.error(error.message);
   }
 }
 
+// Execute the main function
 main();
