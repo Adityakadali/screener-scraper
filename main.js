@@ -1,9 +1,29 @@
 import * as cheerio from "cheerio";
 import axios from "axios";
 import fs from "fs/promises"; // Import the 'fs/promises' module for file operations.
+import * as p from "@clack/prompts";
 
-const SCREENER_URL = "https://www.screener.in/screens/254/zero-debt/";
-const outputFilePath = "output.csv"; // Specify the output file path.
+const userInput = await p.group({
+  SCREENER_URL: () =>
+    p.text({
+      message: "Enter URL of the Screen",
+      placeholder: "https://www.screener.in/screens/example",
+      validate: (value) => {
+        const urlPattern =
+          /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+        if (!urlPattern.test(value)) return "Please enter a valid URL.";
+      },
+    }),
+  outputFilePath: () =>
+    p.text({
+      message: "Enter output file name",
+      placeholder: "outputscreen",
+      validate: (value) => {
+        const fileNamePattern = /^[a-zA-Z0-9-_]+(\.[a-zA-Z0-9]+)?$/;
+        if (!fileNamePattern.test(value)) return "Please valid file name.";
+      },
+    }),
+}); // Specify the output file path.
 const headers = [];
 let totalPages;
 const requestDelay = 2000;
@@ -26,7 +46,8 @@ async function getHeaders(URL) {
       headers.push($(element).text().replace(/\n\s+/g, " ").trim());
     });
     await writeCSV(headers);
-    totalPages = $("[data-paging] > div > div > a.ink-900").last().text();
+    totalPages =
+      $("[data-paging] > div > div > a.ink-900").last().text() || "1";
     console.log(`Total pages: ${totalPages}`);
   } catch (error) {
     throw new Error(`Error while getting headers: ${error.message}`);
@@ -36,7 +57,7 @@ async function getHeaders(URL) {
 async function writeCSV(data) {
   try {
     const row = data.join(",");
-    await fs.appendFile(outputFilePath, row + "\n");
+    await fs.appendFile(userInput.outputFilePath + ".csv", row + "\n");
   } catch (error) {
     throw new Error(`Error while writing to CSV: ${error.message}`);
   }
@@ -70,9 +91,10 @@ async function makeCSV(URL) {
 
 async function main() {
   try {
+    console.log(userInput);
     // Clear the output file if it exists or create a new one.
-    await fs.writeFile(outputFilePath, "");
-    await makeCSV(SCREENER_URL);
+    await fs.writeFile(userInput.outputFilePath + ".csv", "");
+    await makeCSV(userInput.SCREENER_URL);
   } catch (error) {
     console.error(error.message);
   }
