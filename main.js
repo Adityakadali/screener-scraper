@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import axios from "axios";
-import fs from "fs/promises"; // Import the 'fs/promises' module for file operations.
+import fs from "fs/promises";
 import * as p from "@clack/prompts";
 
 const userInput = await p.group({
@@ -23,9 +23,8 @@ const userInput = await p.group({
         if (!fileNamePattern.test(value)) return "Please valid file name.";
       },
     }),
-}); // Specify the output file path.
-const headers = [];
-let totalPages;
+});
+
 const requestDelay = 2000;
 
 async function getHtml(URL) {
@@ -41,48 +40,57 @@ async function getHeaders(URL) {
   try {
     const html = await getHtml(URL);
     const $ = cheerio.load(html);
+    const headers = [];
     const $table = $(".data-table > tbody");
     $table.find("tr:nth-child(1) > th").each((_idx, element) => {
       headers.push($(element).text().replace(/\n\s+/g, " ").trim());
     });
-    await writeCSV(headers);
-    totalPages =
+    await writeCSV(headers, userInput.outputFilePath + ".csv");
+
+    const totalPages =
       $("[data-paging] > div > div > a.ink-900").last().text() || "1";
     console.log(`Total pages: ${totalPages}`);
+    return totalPages;
   } catch (error) {
     throw new Error(`Error while getting headers: ${error.message}`);
   }
 }
 
-async function writeCSV(data) {
+async function writeCSV(data, filePath) {
   try {
     const row = data.join(",");
-    await fs.appendFile(userInput.outputFilePath + ".csv", row + "\n");
+    await fs.appendFile(filePath, row + "\n");
   } catch (error) {
     throw new Error(`Error while writing to CSV: ${error.message}`);
   }
 }
 
+async function processPage(URL, page) {
+  const pageUrl = `${URL}?page=${page}`;
+  const html = await getHtml(pageUrl);
+  const $ = cheerio.load(html);
+  const $table = $(".data-table > tbody");
+
+  $table.find("tr[data-row-company-id]").each((_idx, element) => {
+    const data = $(element)
+      .find("td")
+      .map((_idx, element) => $(element).text().trim())
+      .get();
+
+    writeCSV(data, userInput.outputFilePath + ".csv");
+  });
+}
+
 async function makeCSV(URL) {
   try {
-    await getHeaders(URL);
+    const totalPages = await getHeaders(URL);
+
     for (let index = 1; index <= totalPages; index++) {
       console.log(`Processing page ${index} of ${totalPages}`);
-      const pageUrl = `${URL}?page=${index}`;
-      const html = await getHtml(pageUrl);
-      const $ = cheerio.load(html);
-      const $table = $(".data-table > tbody");
-      $table.find("tr[data-row-company-id]").each((_idx, element) => {
-        const data = [];
-        $(element)
-          .find("td")
-          .each((_idx, element) => {
-            data.push($(element).text().trim());
-          });
-        writeCSV(data);
-      });
+      await processPage(URL, index);
       await new Promise((resolve) => setTimeout(resolve, requestDelay));
     }
+
     console.log("CSV generation complete.");
   } catch (error) {
     console.error(error.message);
@@ -91,8 +99,6 @@ async function makeCSV(URL) {
 
 async function main() {
   try {
-    console.log(userInput);
-    // Clear the output file if it exists or create a new one.
     await fs.writeFile(userInput.outputFilePath + ".csv", "");
     await makeCSV(userInput.SCREENER_URL);
   } catch (error) {
